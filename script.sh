@@ -1,7 +1,11 @@
+#!/bin/bash
 # Install everything needed to run docker
 if (( $EUID != 0 )); then
     echo "Please run as root"
     exit
+else
+	echo "nice"
+	exit
 fi
 
 
