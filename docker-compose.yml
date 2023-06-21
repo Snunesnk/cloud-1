@@ -1,34 +1,58 @@
 version: '3'
 
 services:
+#  wordpress:
+#    build:
+#        context: .
+#        dockerfile: wordpress/Dockerfile
+#        args:
+#          WORDPRESS_DB_HOST: mariadb
+#          MYSQL_USER: ${MYSQL_USER}
+#          MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+#          MYSQL_DATABASE: ${MYSQL_DATABASE}
+#          WP_DOMAIN: ${WP_DOMAIN}
+#          WP_TITLE: ${WP_TITLE}
+#          WP_USER: ${WP_USER}
+#          WP_PASS: ${WP_PASS}
+#          WP_EMAIL: ${WP_EMAIL}
+#    container_name: wordpress
+#    restart: always
+#    ports:
+#      - 8084:80
+#    volumes:
+#      - ./wordpress-data:/var/www/html:rw
+#    depends_on:
+#      - mariadb
+#      - nginx
+    
   wordpress:
     container_name: wordpress
     image: wordpress
     restart: always
     ports:
-      - 8080:80
+      - 8084:80
     environment:
       WORDPRESS_DB_HOST: mariadb
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
     volumes:
-      - wordpress:/var/www/html
+      - ./wordpress-data:/var/www/html:rw
     depends_on:
       - mariadb
       - nginx
-    
   nginx:
     container_name: nginx
     image: nginx:latest
     restart: always
     ports:
-      - 80:80
-      - 443:443
+      - 8090:80
+      - 8091:81
+#      - 443:443
     volumes:
-      - ./nginx/conf:/etc/nginx/conf.d
-      - ./certbot/conf:/etc/nginx/ssl
-      - ./certbot/data:/var/www/html
+      - ./nginx/conf:/etc/nginx/conf.d:rw
+#      - ./certbot/conf:/etc/nginx/ssl
+#      - ./certbot/data:/var/www/html
 
   mariadb: 
     container_name: mariadb
@@ -40,14 +64,14 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      - db:/var/lib/mysql
+      - ./mariadb-data:/var/lib/mysql:rw
 
   phpmyadmin:
     container_name: phpmyadmin
     image: phpmyadmin/phpmyadmin
     restart: always
     ports:
-      - 8081:80
+      - 8083:80
     environment:
       PMA_HOST: mariadb
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
