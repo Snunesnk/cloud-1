@@ -27,6 +27,17 @@ function	cleancontainers {
 }
 
 ##MAIN FUNCTIONS
+function	genereconfigenv {
+    cd 
+	touch $1
+	cat <<EOF > $1
+MYSQL_ROOT_PASSWORD=root_password
+MYSQL_DATABASE=db
+MYSQL_USER=user
+MYSQL_PASSWORD=password
+EOF
+}
+
 function	fcleanservices {
 	downcontainers
 	cleancontainers
@@ -54,6 +65,40 @@ function	cleanandrestartservices {
 
 
 ##function install instance :
-# installer dependances : apt-transport-https, ca-certificates, curl, wget, gnupg-agent, software-properties-common, make, python3
-# intaler docker (installer gpg key + mettre dans apt et install docker-ce OU install docker.io) + install docker-compose
+function	installDependencies {
+	apt-get update
+	apt-get install -y apt-transport-https wget software-properties-common make python3
+	# Docker dependencies
+	apt-get install ca-certificates curl gnupg
+}
 
+function installDocker {
+	# Uninstall old versions to avoid conflicts
+	for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove $pkg; done
+	apt-get update
+	# Add docker gpg key
+	install -m 0755 -d /etc/apt/keyrings
+	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+	chmod a+r /etc/apt/keyrings/docker.gpg
+	# Add docker repository
+	echo \
+  		"deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  		"$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  		sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+	# Install docker
+	apt-get update
+	apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+	# Enable docker + make it start on boot
+	systemctl start docker
+	systemctl enable docker
+}
+
+function purgeDocker {
+	downcontainers
+	cleancontainers
+	# Remove packages
+	apt-get purge docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
+	# Delete all images, containers and volumes
+	sudo rm -rf /var/lib/docker
+	sudo rm -rf /var/lib/containerd
+}
