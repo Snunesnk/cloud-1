@@ -2,7 +2,7 @@
 
 if [[ $# != 1 ]]; then
         echo "Need 1 parameter, get $# parameters"
-        echo "Usage : bash $0 [DOMAIN NAME]"
+        echo "Usage : sudo $0 [DOMAIN NAME]"
         exit
 fi
 
@@ -18,7 +18,7 @@ if (( $EUID != 0 )); then
 fi
 
 # Get functions from manager.sh
-source manager.sh
+source ./manager.sh
 
 #create and move to working repertory 
 mkdir -p $WORKINGDIRECTORY

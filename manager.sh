@@ -72,7 +72,7 @@ function	installDependencies {
 	apt-get install ca-certificates curl gnupg
 }
 
-function installDocker {
+function	installDocker {
 	# Uninstall old versions to avoid conflicts
 	for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove $pkg; done
 	apt-get update
@@ -93,7 +93,7 @@ function installDocker {
 	systemctl enable docker
 }
 
-function purgeDocker {
+function	purgeDocker {
 	downcontainers
 	cleancontainers
 	# Remove packages
