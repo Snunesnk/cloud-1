@@ -87,7 +87,7 @@ function	installDocker {
   		sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 	# Install docker
 	apt-get update
-	apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+	apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 	# Enable docker + make it start on boot
 	systemctl start docker
 	systemctl enable docker

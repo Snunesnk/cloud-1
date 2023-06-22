@@ -26,5 +26,6 @@ cd $WORKINGDIRECTORY
 genereconfigenv $DOMAINNAME
 installDependencies
 installDocker
+runservices
 
 
