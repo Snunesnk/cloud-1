@@ -3,11 +3,11 @@ ENVFILE="./.env"
 
 ##LITTLE FUNCTIONS
 function	upcontainers {
-	docker-compose -f ./docker-compose.yml --env-file $ENVFILE up -d
+	docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d
 }
 
 function	downcontainers {
-	docker-compose -f ./docker-compose.yml --env-file $ENVFILE down
+	docker compose -f ./docker-compose.yml --env-file $ENVFILE down
 }
 
 function	restartcontainer {
@@ -27,14 +27,27 @@ function	cleancontainers {
 }
 
 ##MAIN FUNCTIONS
+# function	genereconfigenv {
+#     cd 
+# 	touch $1
+# 	cat <<EOF > $1
+# MYSQL_ROOT_PASSWORD=root_password
+# MYSQL_DATABASE=db
+# MYSQL_USER=user
+# MYSQL_PASSWORD=password
+# EOF
+# }
+
 function	genereconfigenv {
-    cd 
-	touch $1
-	cat <<EOF > $1
-MYSQL_ROOT_PASSWORD=root_password
-MYSQL_DATABASE=db
-MYSQL_USER=user
-MYSQL_PASSWORD=password
+	MYSQL_ROOT_PASSWORD="root_password-$1"
+	MYSQL_DATABASE="db-$1"
+	MYSQL_USER="user-$1"
+	MYSQL_PASSWORD="password-$1"
+	cat <<EOF > .env
+MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+MYSQL_DATABASE=$MYSQL_DATABASE
+MYSQL_USER=$MYSQL_USER
+MYSQL_PASSWORD=$MYSQL_PASSWORD
 EOF
 }
 
@@ -48,11 +61,12 @@ function	deployservices {
 	### creer la structure de document + bons droits
 	### mettre les sources
 	### ajouter les data wordpress + mariadb
+	echo "TODO"
 }
 
 function	runservices {
 	### attention prérequis de deployservices si appel a cette function
-	### donner les permission chmod +x docker-compose
+	### donner les permission chmod +x docker compose
 	upcontainers
 }
 
