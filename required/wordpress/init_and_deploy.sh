@@ -17,11 +17,15 @@ if (( $EUID != 0 )); then
     exit
 fi
 
-cd $WORKINGDIRECTORY
 # Get functions from manager.sh
 source ./manager.sh
 
-fcleanservices
-cd ..
-rm -rf $WORKINGDIRECTORY
-purgeDocker
+#create and move to working repertory
+mkdir -p $WORKINGDIRECTORY
+cp -r * $WORDKINGDIRECTORY
+cd $WORKINGDIRECTORY
+genereconfigenv $DOMAINNAME
+installDependencies
+installDocker
+deployservices $DOMAINNAME
+runservices

@@ -51,7 +51,7 @@ function genere_confnginx {
 	fi
 	mkdir -p nginx
 	cd nginx
-	cat <<EOF > default.conf 
+	cat <<EOF > default.conf
 server {
     listen       80;
     server_name  pma.$1;
@@ -59,7 +59,18 @@ server {
         proxy_pass http://phpmyadmin/;
     }
 }
+server {
+    listen       80;
+    server_name  wp.$1;
+
+    location / {
+        fastcgi_param   APPLICATION_ENV  production;
+        fastcgi_param   APPLICATION_CONFIG user;
+        proxy_pass http://wordpress/;
+    }
+}
 EOF
+ cd ..
 }
 
 function	fcleanservices {
@@ -130,3 +141,9 @@ function	purgeDocker {
 	sudo rm -rf /var/lib/docker
 	sudo rm -rf /var/lib/containerd
 }
+
+
+
+#deletedatas restartcontainer downcontainers upcontainers
+#cleancontainers genereconfigenv genere_confnginx fcleanservices deployservices runservices cleanandrestartservices installDependencies installDocker purgeDocker
+

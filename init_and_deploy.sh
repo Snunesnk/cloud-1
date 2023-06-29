@@ -17,12 +17,16 @@ if (( $EUID != 0 )); then
     exit
 fi
 
+## Create required copy and move in
+cp -r required $WORKINGDIRECTORY
+cd $WORKINGDIRECTORY
+
 # Get functions from manager.sh
 source ./manager.sh
 
-#create and move to working repertory 
-genereconfigenv $DOMAINNAME
+#create and move to working repertory
 installDependencies
 installDocker
+genereconfigenv $DOMAINNAME
 deployservices $DOMAINNAME
 runservices

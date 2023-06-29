@@ -17,11 +17,9 @@ if (( $EUID != 0 )); then
     exit
 fi
 
-cd $WORKINGDIRECTORY
 # Get functions from manager.sh
 source ./manager.sh
 
 fcleanservices
-cd ..
 rm -rf $WORKINGDIRECTORY
 purgeDocker
