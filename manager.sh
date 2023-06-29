@@ -16,14 +16,14 @@ function	restartcontainer {
 }
 
 function	deletedatas {
-	rm -rf ~/data/wordpress/*
-	rm -rf ~/data/mariadb/*
+	rm -rf ~/wordpress-data
+	rm -rf ~/mariadb-data
 }
 
 function	cleancontainers {
+	docker stop $(docker ps -a -q)
+	docker rm $(docker ps -a -q)
 	docker system prune --all --force --volumes
-	docker network prune --force
-	docker volume prune --force
 }
 
 ##MAIN FUNCTIONS
@@ -64,8 +64,8 @@ EOF
 
 function	fcleanservices {
 	downcontainers
-	cleancontainers
 	deletedatas
+	cleancontainers
 }
 
 function	deployservices {
