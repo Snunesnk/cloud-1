@@ -21,11 +21,8 @@ fi
 source ./manager.sh
 
 #create and move to working repertory 
-mkdir -p $WORKINGDIRECTORY
-cd $WORKINGDIRECTORY
 genereconfigenv $DOMAINNAME
 installDependencies
 installDocker
+deployservices $DOMAINNAME
 runservices
-
-

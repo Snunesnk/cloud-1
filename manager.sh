@@ -27,27 +27,38 @@ function	cleancontainers {
 }
 
 ##MAIN FUNCTIONS
-# function	genereconfigenv {
-#     cd 
-# 	touch $1
-# 	cat <<EOF > $1
-# MYSQL_ROOT_PASSWORD=root_password
-# MYSQL_DATABASE=db
-# MYSQL_USER=user
-# MYSQL_PASSWORD=password
-# EOF
-# }
 
 function	genereconfigenv {
-	MYSQL_ROOT_PASSWORD="root_password-$1"
-	MYSQL_DATABASE="db-$1"
-	MYSQL_USER="user-$1"
-	MYSQL_PASSWORD="password-$1"
+	DOMAINNAME=$1
+	RANDOM=$(date +%s%N | cut -b10-19)
+	MYSQL_ROOT_PASSWORD="root_password-$RANDOM"
+	MYSQL_DATABASE="db-$RANDOM"
+	MYSQL_USER="user-$RANDOM"
+	MYSQL_PASSWORD="password-$RANDOM"
 	cat <<EOF > .env
 MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
 MYSQL_DATABASE=$MYSQL_DATABASE
 MYSQL_USER=$MYSQL_USER
 MYSQL_PASSWORD=$MYSQL_PASSWORD
+EOF
+}
+
+function genere_confnginx {
+	DOMAINNAME=$1
+	if [[ $DOMAINNAME == '' ]]
+	then
+		DOMAINNAME="localhost"
+	fi
+	mkdir -p nginx
+	cd nginx
+	cat <<EOF > default.conf 
+server {
+    listen       80;
+    server_name  pma.$1;
+    location / {
+        proxy_pass http://phpmyadmin/;
+    }
+}
 EOF
 }
 
@@ -58,6 +69,9 @@ function	fcleanservices {
 }
 
 function	deployservices {
+	DOMAINNAME=$1
+	genere_confnginx $DOMAINNAME
+
 	### creer la structure de document + bons droits
 	### mettre les sources
 	### ajouter les data wordpress + mariadb
