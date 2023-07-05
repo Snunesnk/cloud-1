@@ -7,14 +7,20 @@ if [[ $# != 1 ]]; then
 fi
 
 DOMAINNAME=$1
-ENVFILE=".env"
 WORKINGDIRECTORY="cloud1-""$DOMAINNAME"
+ENVFILE=".env"
 
 # The script must be launched as root,
 # To install everything + start services
 if (( $EUID != 0 )); then
     echo "Please run as root"
     exit
+fi
+if [[ -d $WORKINGDIRECTORY  ]]
+then
+	echo "The working directory is already here for $DOMAINNAME"
+	echo "Not deploying again"
+	exit
 fi
 
 ## Create required copy and move in
@@ -27,6 +33,5 @@ source ./manager.sh
 #create and move to working repertory
 installDependencies
 installDocker
-genereconfigenv $DOMAINNAME
 deployservices $DOMAINNAME
 runservices

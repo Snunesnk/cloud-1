@@ -1,9 +1,11 @@
 #!/bin/bash
-ENVFILE="./.env"
+#ENVFILE="./.env"
 
 ##LITTLE FUNCTIONS
 function	upcontainers {
 	docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d
+	echo "Phpmyadmin at https://pma.$DOMAINNAME"
+	echo "Wordpress at https://wp.$DOMAINNAME"
 }
 
 function	downcontainers {
@@ -49,10 +51,8 @@ function genere_confnginx {
 	then
 		DOMAINNAME="localhost"
 	fi
-	mkdir -p nginx
-	cd nginx
-	mkdir -p conf
-	cat <<EOF > default.conf
+	mkdir -p nginx/conf/
+	cat <<EOF > nginx/conf/default.conf
 server {
     listen       80;
     server_name  pma.$1;
@@ -71,7 +71,6 @@ server {
     }
 }
 EOF
- cd ../..
 }
 
 function	fcleanservices {
@@ -82,17 +81,17 @@ function	fcleanservices {
 
 function	deployservices {
 	DOMAINNAME=$1
+	genereconfigenv $DOMAINNAME
 	genere_confnginx $DOMAINNAME
 
 	### creer la structure de document + bons droits
 	### mettre les sources
 	### ajouter les data wordpress + mariadb
-	echo "TODO"
+	echo "Et la on rajoute les data wordpress + mariadb maintenant qu'on a mis env et nginx"
 }
 
 function	runservices {
 	### attention prérequis de deployservices si appel a cette function
-	### donner les permission chmod +x docker compose
 	upcontainers
 }
 
@@ -114,28 +113,46 @@ function	installDependencies {
 
 function	installDocker {
 	# Uninstall old versions to avoid conflicts
-	for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove $pkg; done
-	apt-get update
+	#for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove $pkg; done
 	# Add docker gpg key
-	install -m 0755 -d /etc/apt/keyrings
-	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-	chmod a+r /etc/apt/keyrings/docker.gpg
+	if [[ ! -f /etc/apt/keyrings/docker.gpg  ]]
+	then
+		install -m 0755 -d /etc/apt/keyrings
+		curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+		chmod a+r /etc/apt/keyrings/docker.gpg
+	fi
 	# Add docker repository
-	echo \
-  		"deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  		"$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+	if [[ ! -f /etc/apt/sources.list.d/docker.list  ]]
+	then
+		echo \
+  			"deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  			"$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
   		sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+	fi
 	# Install docker
 	apt-get update
+	echo "avant install"
 	apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 	# Enable docker + make it start on boot
-	systemctl start docker
-	systemctl enable docker
+#	systemctl start docker
+	STATUSDOCKER=`systemctl is-active docker`
+	if [[ $STATUSDOCKER == "active" ]]
+	then
+		echo "docker deja active"
+		systemctl enable docker
+	else
+		echo "docker not active"
+		systemctl enable docker --now
+	fi
+echo "avant status"
+systemctl status docker
 }
 
 function	purgeDocker {
 	# Remove packages
-	apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
+	systemctl disable docker --now
+	systemctl disable docker.socket --now
+	apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 	apt-get autoremove -y --purge
 	# Remove key for docker
 	rm -r /etc/apt/keyrings/docker.gpg

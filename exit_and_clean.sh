@@ -17,6 +17,11 @@ if (( $EUID != 0 )); then
     exit
 fi
 
+if [[ ! -d $WORKINGDIRECTORY  ]]
+then
+	echo "No working directory for $DOMAINNAME"
+	exit
+fi
 cd $WORKINGDIRECTORY
 # Get functions from manager.sh
 source ./manager.sh
