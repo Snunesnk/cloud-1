@@ -140,10 +140,11 @@ function	purgeDocker {
 	# Remove key for docker
 	rm -r /etc/apt/keyrings/docker.gpg
 	# Delete all images, containers and volumes
+	rm -r /etc/apt/sources.list.d/docker.list
 	rm -rf /var/lib/docker
 	rm -rf /var/lib/containerd
 	rm -rf /var/lib/docker /etc/docker
-	rm /etc/apparmor.d/docker
+	#rm /etc/apparmor.d/docker
 	groupdel docker
 	rm -rf /var/run/docker.sock
 }
