@@ -16,8 +16,8 @@ function	restartcontainer {
 }
 
 function	deletedatas {
-	rm -rf ~/wordpress-data
-	rm -rf ~/mariadb-data
+	rm -rf ./wordpress-data
+	rm -rf ./mariadb-data
 }
 
 function	cleancontainers {
@@ -134,9 +134,6 @@ function	installDocker {
 }
 
 function	purgeDocker {
-	downcontainers
-	cleancontainers
-
 	# Remove packages
 	apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
 	apt-get autoremove -y --purge
