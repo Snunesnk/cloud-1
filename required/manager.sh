@@ -65,6 +65,14 @@ server {
     server_name  wp.$1;
 
     location / {
+    	proxy_set_header Connection "";
+    	proxy_set_header Host \$http_host;
+    	proxy_set_header X-Real-IP \$remote_addr;
+    	proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    	proxy_set_header X-Forwarded-Proto \$scheme;
+    	proxy_set_header X-Frame-Options SAMEORIGIN;
+    	proxy_buffers 256 16k;
+    	proxy_buffer_size 16k;
         fastcgi_param   APPLICATION_ENV  production;
         fastcgi_param   APPLICATION_CONFIG user;
         proxy_pass http://wordpress/;

@@ -5,7 +5,7 @@ services:
     build:
         context: .
         dockerfile: ./wordpress/Dockerfile
-    container_name: mywordpress
+    container_name: wordpress
     restart: always
     environment:
       WORDPRESS_DB_HOST: mariadb
@@ -18,31 +18,13 @@ services:
       - ./wordpress-data:/var/www/html:rw
     depends_on:
       - mariadb
-      - nginx
     
-#  wordpress:
-#    container_name: wordpress
-#    image: wordpress
-#    restart: always
-#    ports:
-#      - 8084:80
-#    environment:
-#      WORDPRESS_DB_HOST: mariadb
-#      WORDPRESS_DB_USER: ${MYSQL_USER}
-#      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
-#      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
-#   volumes:
-#      - ./wordpress-data:/var/www/html:rw
-#    depends_on:
-#      - mariadb
-#      - nginx
   nginx:
     container_name: nginx
     image: nginx:latest
     restart: always
     ports:
-      - 8090:80
-      - 8091:8081
+      - 80:80
 #      - 443:443
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:rw
@@ -51,6 +33,7 @@ services:
 #      - ./certbot/data:/var/www/html
     depends_on:
       - phpmyadmin
+      - wordpress
 
   mariadb: 
     container_name: mariadb
