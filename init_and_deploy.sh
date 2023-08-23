@@ -35,3 +35,4 @@ installDependencies
 installDocker
 deployservices $DOMAINNAME
 runservices
+gethttps $DOMAINNAME

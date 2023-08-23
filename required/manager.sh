@@ -46,7 +46,8 @@ MYSQL_PASSWORD=$MYSQL_PASSWORD
 EOF
 }
 
-function genere_confnginx {
+function gethttps {
+	sleep 45
 	DOMAINNAME=$1
 	if [[ $DOMAINNAME == '' ]]
 	then
@@ -123,6 +124,35 @@ server {
 	location ~* \.(css|gif|ico|jpeg|jpg|js|png)$ {
 			expires max;
 			log_not_found off;
+	}
+}
+EOF
+	docker exec nginx nginx -s reload
+	echo "Phpmyadmin at https://pma.$DOMAINNAME"
+	echo "Wordpress at https://wp.$DOMAINNAME"
+}
+
+function genere_confnginx {
+	DOMAINNAME=$1
+	if [[ $DOMAINNAME == '' ]]
+	then
+		DOMAINNAME="localhost"
+	fi
+	mkdir -p nginx/conf/
+	cat <<EOF > nginx/conf/default.conf
+server {
+	listen	80;
+	server_name	pma.$1;
+	location /.well-known/acme-challenge/ {
+		root /var/www/certbot;
+	}
+}
+
+server {
+	listen       80;
+	server_name  wp.$1;
+	location /.well-known/acme-challenge/ {
+		root /var/www/certbot;
 	}
 }
 EOF
