@@ -55,65 +55,75 @@ function genere_confnginx {
 	mkdir -p nginx/conf/
 	cat <<EOF > nginx/conf/default.conf
 server {
-    listen       80;
-    server_name  pma.$1;
-    return 301 https://pma.$1\$request_uri;
+	listen	80;
+	server_name	pma.$1;
+	location /.well-known/acme-challenge/ {
+		root /var/www/certbot;
+	}
+	location / {
+		return 301 https://pma.$1\$request_uri;
+	}
 }
 server {
-        listen       443 ssl;
-		http2 on;
-        server_name  pma.$1;
-        ssl_certificate     /etc/letsencrypt/live/$1/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/$1/privkey.pem;
-        location ~ /.well-known/acme-challenge/ {
-                root /var/www/certbot;
-        }
-        location / {
-                proxy_pass http://phpmyadmin/;
-        }
+	listen	443 ssl;
+	http2 on;
+	server_name  pma.$1;
+	ssl_certificate     /etc/letsencrypt/live/$1/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/$1/privkey.pem;
+	location ~ /.well-known/acme-challenge/ {
+			root /var/www/certbot;
+	}
+	location / {
+			proxy_pass http://phpmyadmin/;
+	}
 }
 
 server {
-        listen       80;
-        server_name  wp.$1;
-        return 301 https://wp.$1\$request_uri;
+	listen       80;
+	server_name  wp.$1;
+	location /.well-known/acme-challenge/ {
+		root /var/www/certbot;
+	}
+	location / {
+		return 301 https://wp.$1\$request_uri;
+	}
 }
 server {
-        listen       443 ssl;
-		http2 on;
-        server_name  wp.$1;
-        ssl_certificate     /etc/letsencrypt/live/$1/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/$1/privkey.pem;
-        location ~ /.well-known/acme-challenge {
-                allow all;
-                root /var/www/certbot;
-        }
-        location / {
-                proxy_set_header Connection "";
-                proxy_set_header Host \$http_host;
-                proxy_set_header X-Real-IP \$remote_addr;
-                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto \$scheme;
-                proxy_set_header X-Frame-Options SAMEORIGIN;
-                proxy_buffers 256 16k;
-                proxy_buffer_size 16k;
-                fastcgi_param   APPLICATION_ENV  production;
-                fastcgi_param   APPLICATION_CONFIG user;
-                proxy_pass http://wordpress/;
-        }
-        location ~ /\.ht {
-                deny all;
-        }
-        location = /favicon.ico { 
-                log_not_found off; access_log off; 
-        }
-        location = /robots.txt { 
-                log_not_found off; access_log off; allow all; 
-        }
-        location ~* \.(css|gif|ico|jpeg|jpg|js|png)$ {
-                expires max;
-                log_not_found off;
-        }
+	listen	443 ssl;
+	http2 on;
+	server_name	wp.$1;
+	ssl_certificate	/etc/letsencrypt/live/$1/fullchain.pem;
+	ssl_certificate_key	/etc/letsencrypt/live/$1/privkey.pem;
+	location ~ /.well-known/acme-challenge {
+		allow all;
+		root /var/www/certbot;
+}
+	location / {
+		proxy_set_header Connection "";
+		proxy_set_header Host \$http_host;
+		proxy_set_header X-Real-IP \$remote_addr;
+		proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+		proxy_set_header X-Forwarded-Proto \$scheme;
+		proxy_set_header X-Frame-Options SAMEORIGIN;
+		proxy_buffers 256 16k;
+		proxy_buffer_size 16k;
+		fastcgi_param   APPLICATION_ENV  production;
+		fastcgi_param   APPLICATION_CONFIG user;
+		proxy_pass http://wordpress/;
+	}
+	location ~ /\.ht {
+			deny all;
+	}
+	location = /favicon.ico { 
+			log_not_found off; access_log off; 
+	}
+	location = /robots.txt { 
+			log_not_found off; access_log off; allow all; 
+	}
+	location ~* \.(css|gif|ico|jpeg|jpg|js|png)$ {
+			expires max;
+			log_not_found off;
+	}
 }
 EOF
 }
