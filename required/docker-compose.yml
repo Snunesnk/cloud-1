@@ -18,23 +18,21 @@ services:
       - ./wordpress-data:/var/www/html:rw
     depends_on:
       - mariadb
-    
   nginx:
     container_name: nginx
     image: nginx:latest
     restart: always
     ports:
       - 80:80
-#      - 443:443
+      - 443:443
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:rw
-      - ./wordpress-data:/var/www/html:rw
-#      - ./certbot/conf:/etc/nginx/ssl
-#      - ./certbot/data:/var/www/html
+      - ./wordpress-data:/var/www/html:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/data:/var/www/certbot:ro
     depends_on:
       - phpmyadmin
       - wordpress
-
   mariadb: 
     container_name: mariadb
     image: mariadb:latest
@@ -46,7 +44,6 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - ./mariadb-data:/var/lib/mysql:rw
-
   phpmyadmin:
     container_name: phpmyadmin
     image: phpmyadmin/phpmyadmin
@@ -61,16 +58,14 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     depends_on:
       - mariadb
-
-  # certbot:
-  #   container_name: certbot
-  #   image: certbot/certbot:latest
-  #   command: certonly --webroot --webroot-path=/var/www/html --email youremail@domain.com --agree-tos --no-eff-email -d domain.com -d www.domain.com
-  #   volumes:
-  #     - ./certbot/conf:/etc/letsencrypt
-  #     - ./certbot/logs:/var/log/letsencrypt
-  #     - ./certbot/data:/var/www/html
-    
+  certbot:
+     container_name: certbot
+     image: certbot/certbot:latest
+     command: certonly --cert-name ${DOMAINNAME} --webroot --webroot-path /var/www/certbot --email maiiwen@42l.fr --agree-tos --no-eff-email -d wp.${DOMAINNAME} -d pma.${DOMAINNAME}
+     volumes:
+       - ./certbot/conf:/etc/letsencrypt:rw
+       - ./certbot/logs:/var/log/letsencrypt:rw
+       - ./certbot/data:/var/www/certbot:rw
 volumes:
   wordpress-data:
   mariadb-data:
