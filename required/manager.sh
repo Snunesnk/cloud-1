@@ -4,8 +4,7 @@
 ##LITTLE FUNCTIONS
 function	upcontainers {
 	docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d
-	echo "Phpmyadmin at https://pma.$DOMAINNAME"
-	echo "Wordpress at https://wp.$DOMAINNAME"
+	echo "Starting containers ..."
 }
 
 function	downcontainers {
@@ -122,6 +121,7 @@ server {
 			log_not_found off; access_log off; allow all; 
 	}
 	location ~* \.(css|gif|ico|jpeg|jpg|js|png)$ {
+			root /var/www/html;
 			expires max;
 			log_not_found off;
 	}

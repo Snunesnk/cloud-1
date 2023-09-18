@@ -61,7 +61,7 @@ services:
   certbot:
      container_name: certbot
      image: certbot/certbot:latest
-     command: certonly --cert-name ${DOMAINNAME} --webroot --webroot-path /var/www/certbot --email maiiwen@42l.fr --agree-tos --no-eff-email -d wp.${DOMAINNAME} -d pma.${DOMAINNAME}
+     command: certonly --cert-name ${DOMAINNAME} --webroot --webroot-path /var/www/certbot --email maiiwen@42l.fr --agree-tos --no-eff-email -d wp.${DOMAINNAME} -d pma.${DOMAINNAME} --test-cert
      volumes:
        - ./certbot/conf:/etc/letsencrypt:rw
        - ./certbot/logs:/var/log/letsencrypt:rw
