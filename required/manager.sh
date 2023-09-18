@@ -1,9 +1,41 @@
 #!/bin/bash
 #ENVFILE="./.env"
 
+# Function to initialize Docker swarm
+init_swarm() {
+    docker swarm init --advertise-addr $(hostname -i)
+    echo "Swarm initialized. Share the following token with other machines to join the swarm:"
+    docker swarm join-token worker
+}
+
+# Function to monitor for new nodes
+monitor_nodes() {
+    while true; do
+        # Check for new nodes
+        new_nodes=$(docker node ls --format "{{.Hostname}}" | grep -v "$(hostname)")
+        
+        if [ -n "$new_nodes" ]; then
+            echo "New nodes detected: $new_nodes"
+            read -p "Do you want to proceed with these machines? (y/n): " choice
+            if [ "$choice" = "y" ]; then
+                echo "Proceeding with current machines."
+                break
+            fi
+        fi
+
+        sleep 1
+    done
+}
+
 ##LITTLE FUNCTIONS
 function	upcontainers {
-	docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d
+# If INITSWARM is true, initialize Docker swarm
+	if [ "$1" = true ]; then
+    	init_swarm
+		monitor_nodes
+	fi
+
+	# docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d
 	echo "Starting containers ..."
 }
 
@@ -178,7 +210,7 @@ function	deployservices {
 
 function	runservices {
 	### attention prérequis de deployservices si appel a cette function
-	upcontainers
+	upcontainers $1
 }
 
 function	cleanandrestartservices {
@@ -230,8 +262,6 @@ function	installDocker {
 		echo "docker not active"
 		systemctl enable docker --now
 	fi
-echo "avant status"
-systemctl status docker
 }
 
 function	purgeDocker {
