@@ -4,21 +4,20 @@
 # Function to initialize Docker swarm
 init_swarm() {
     docker swarm init --advertise-addr $(hostname -i)
-    echo "Swarm initialized. Share the following token with other machines to join the swarm:"
-    docker swarm join-token worker
 }
 
 # Function to monitor for new nodes
 monitor_nodes() {
     while true; do
         # Check for new nodes
-        new_nodes=$(docker node ls --format "{{.Hostname}}" | grep -v "$(hostname)")
+        new_nodes=$(docker node ls --format "{{.Hostname}}")
         
         if [ -n "$new_nodes" ]; then
-            echo "New nodes detected: $new_nodes"
-            read -p "Do you want to proceed with these machines? (y/n): " choice
-            if [ "$choice" = "y" ]; then
-                echo "Proceeding with current machines."
+            echo "Current nodes in the swarm:"
+			echo "$new_nodes"
+            read -p "Scan for new nodes? (y/n): " choice
+            if [ "$choice" = "n" ]; then
+                echo "Proceeding with current nodes."
                 break
             fi
         fi
@@ -33,10 +32,14 @@ function	upcontainers {
 	if [ "$1" = true ]; then
     	init_swarm
 		monitor_nodes
+
+		num_nodes=$(docker node ls --format "{{.ID}}" | wc -l)
+		docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d --scale wordpress=$num_nodes --scale mariadb=$num_nodes
+	else
+		docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d
 	fi
 
-	# docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d
-	echo "Starting containers ..."
+	echo "Containers are booting up..."
 }
 
 function	downcontainers {

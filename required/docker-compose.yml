@@ -6,7 +6,6 @@ services:
     build:
         context: .
         dockerfile: ./wordpress/Dockerfile
-    container_name: wordpress
     restart: always
     environment:
       WORDPRESS_DB_HOST: mariadb
@@ -37,7 +36,6 @@ services:
       - wordpress
 
   mariadb: 
-    container_name: mariadb
     image: mariadb:latest
     restart: always
     environment:
@@ -62,7 +60,7 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     depends_on:
       - mariadb
-      
+
   certbot:
     container_name: certbot
     image: certbot/certbot:latest
