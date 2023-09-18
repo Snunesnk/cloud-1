@@ -74,6 +74,7 @@ server {
 			root /var/www/certbot;
 	}
 	location / {
+			proxy_set_header X-Forwarded-Proto https;
 			proxy_pass http://phpmyadmin/;
 	}
 }
