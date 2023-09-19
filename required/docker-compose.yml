@@ -1,11 +1,9 @@
-version: '3'
+version: '3.8'
 
 services:
 
   wordpress:
-    build:
-        context: .
-        dockerfile: ./wordpress/Dockerfile
+    image: wordpress:latest
     restart: always
     environment:
       WORDPRESS_DB_HOST: mariadb
@@ -13,14 +11,21 @@ services:
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
     ports:
-      - 8084:80
+      - "8084"
     volumes:
-      - ./wordpress-data:/var/www/html:rw
+      - wordpress-data:/var/www/html:rw
+    networks:
+      - mynetwork
     depends_on:
       - mariadb
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   nginx:
-    container_name: nginx
     image: nginx:latest
     restart: always
     ports:
@@ -28,14 +33,26 @@ services:
       - 443:443
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:rw
-      - ./wordpress-data:/var/www/html:rw
-      - ./certbot/conf:/etc/letsencrypt:rw
-      - ./certbot/data:/var/www/certbot:rw
+      - wordpress-data:/var/www/html:rw
+      - certbot-conf:/etc/letsencrypt:rw
+      - certbot-data:/var/www/certbot:rw
+    networks:
+      - mynetwork
     depends_on:
       - phpmyadmin
       - wordpress
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      mode: global
+      placement:
+        constraints:
+          - node.role == manager
 
-  mariadb: 
+  mariadb:
     image: mariadb:latest
     restart: always
     environment:
@@ -44,14 +61,23 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      - ./mariadb-data:/var/lib/mysql:rw
+      - mariadb-data:/var/lib/mysql:rw
+    networks:
+      - mynetwork
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   phpmyadmin:
-    container_name: phpmyadmin
     image: phpmyadmin/phpmyadmin
     restart: always
     ports:
       - 8083:80
+    networks:
+      - mynetwork
     environment:
       PMA_HOST: mariadb
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -60,17 +86,39 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     depends_on:
       - mariadb
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   certbot:
-    container_name: certbot
     image: certbot/certbot:latest
     command: certonly --cert-name ${DOMAINNAME} --webroot --webroot-path /var/www/certbot --email maiiwen@42l.fr --agree-tos --no-eff-email -d wp.${DOMAINNAME} -d pma.${DOMAINNAME} --test-cert
     volumes:
-      - ./certbot/conf:/etc/letsencrypt:rw
-      - ./certbot/logs:/var/log/letsencrypt:rw
-      - ./certbot/data:/var/www/certbot:rw
+      - certbot-conf:/etc/letsencrypt:rw
+      - certbot-logs:/var/log/letsencrypt:rw
+      - certbot-data:/var/www/certbot:rw
+    networks:
+      - mynetwork
     depends_on:
       - nginx
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
 volumes:
   wordpress-data:
   mariadb-data:
+  certbot-conf:
+  certbot-logs:
+  certbot-data:
+
+
+networks:
+  mynetwork:
+    driver: overlay

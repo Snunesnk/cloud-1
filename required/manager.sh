@@ -21,8 +21,6 @@ monitor_nodes() {
                 break
             fi
         fi
-
-        sleep 1
     done
 }
 
@@ -33,8 +31,12 @@ function	upcontainers {
     	init_swarm
 		monitor_nodes
 
+		STACKNAME="cloud-1"
+
 		num_nodes=$(docker node ls --format "{{.ID}}" | wc -l)
-		docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d --scale wordpress=$num_nodes --scale mariadb=$num_nodes
+		env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml $STACKNAME
+		docker service scale "$STACKNAME"_wordpress=$num_nodes
+		docker service scale "$STACKNAME"_mariadb=$num_nodes
 	else
 		docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d
 	fi
@@ -60,6 +62,7 @@ function	cleancontainers {
 	#docker stop $(docker ps -a -q)
 	#docker rm $(docker ps -a -q)
 	docker system prune --all --force --volumes
+	sudo docker swarm leave --force
 }
 
 ##MAIN FUNCTIONS
@@ -83,6 +86,7 @@ EOF
 function gethttps {
 	sleep 45
 	DOMAINNAME=$1
+	INITSWARM=$2
 	if [[ $DOMAINNAME == '' ]]
 	then
 		DOMAINNAME="localhost"
@@ -163,7 +167,12 @@ server {
 	}
 }
 EOF
-	docker exec nginx nginx -s reload
+	if [[ $INITSWARM == true ]]
+	then
+		docker exec $(docker ps -q -f name=nginx) nginx -s reload
+	else
+		docker exec nginx nginx -s reload
+	fi
 	echo "Phpmyadmin at https://pma.$DOMAINNAME"
 	echo "Wordpress at https://wp.$DOMAINNAME"
 }

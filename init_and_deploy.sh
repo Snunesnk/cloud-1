@@ -55,4 +55,4 @@ installDependencies
 installDocker
 deployservices $DOMAINNAME
 runservices $INITSWARM
-gethttps $DOMAINNAME
+gethttps $DOMAINNAME $INITSWARM
