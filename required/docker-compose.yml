@@ -19,6 +19,7 @@ services:
       restart_policy:
         condition: any
         delay: 5s
+        max_attempts: 3
         window: 120s
 
   mariadb:
@@ -37,6 +38,7 @@ services:
       restart_policy:
         condition: any
         delay: 5s
+        max_attempts: 3
         window: 120s
 
   phpmyadmin:
@@ -56,11 +58,12 @@ services:
       restart_policy:
         condition: any
         delay: 5s
+        max_attempts: 3
         window: 120s
 
   nginx:
     image: nginx:latest
-    command: nginx -s reload
+    # command: nginx -s reload
     restart: always
     ports:
       - 80:80
@@ -78,6 +81,7 @@ services:
       restart_policy:
         condition: any
         delay: 5s
+        max_attempts: 3
         window: 120s
       mode: global
       placement:
@@ -86,7 +90,7 @@ services:
 
   certbot:
     image: certbot/certbot:latest
-    command: certonly --cert-name ${DOMAINNAME} --webroot --webroot-path /var/www/certbot --email maiiwen@42l.fr --agree-tos --no-eff-email -d wp.${DOMAINNAME} -d pma.${DOMAINNAME} --test-cert
+    command: certonly --cert-name ${DOMAINNAME} --webroot --webroot-path /var/www/certbot --email maiiwen@42l.fr --agree-tos --no-eff-email -d wp.${DOMAINNAME} -d pma.${DOMAINNAME} --test-cert --force-renewal
     volumes:
       - certbot-conf:/etc/letsencrypt:rw
       - certbot-logs:/var/log/letsencrypt:rw
@@ -97,6 +101,7 @@ services:
       restart_policy:
         condition: any
         delay: 5s
+        max_attempts: 3
         window: 120s
       mode: global
       placement:
