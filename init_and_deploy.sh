@@ -47,12 +47,16 @@ fi
 cp -r required $WORKINGDIRECTORY
 cd $WORKINGDIRECTORY
 
-# Get functions from manager.sh
+# Get utils functions
 source ./manager.sh
+source ./beautify.sh
 
-#create and move to working repertory
 installDependencies
 installDocker
+getRateLimit
 deployservices $DOMAINNAME
-runservices $INITSWARM
 gethttps $DOMAINNAME $INITSWARM
+runservices $INITSWARM
+echo ""
+print_info "Phpmyadmin at https://pma.$DOMAINNAME"
+print_info "Wordpress at https://wp.$DOMAINNAME"

@@ -3,7 +3,7 @@
 
 # Function to initialize Docker swarm
 init_swarm() {
-    docker swarm init --advertise-addr $(hostname -i)
+    print_action "docker swarm init --advertise-addr $(hostname -i)" "Start new swarm"
 }
 
 # Function to monitor for new nodes
@@ -13,11 +13,11 @@ monitor_nodes() {
         new_nodes=$(docker node ls --format "{{.Hostname}}")
         
         if [ -n "$new_nodes" ]; then
-            echo "Current nodes in the swarm:"
+            print_info "Current nodes in the swarm:"
 			echo "$new_nodes"
             read -p "Scan for new nodes? (y/n): " choice
             if [ "$choice" = "n" ]; then
-                echo "Proceeding with current nodes."
+                print_info "Proceeding with current nodes."
                 break
             fi
         fi
@@ -26,26 +26,26 @@ monitor_nodes() {
 
 ##LITTLE FUNCTIONS
 function	upcontainers {
-# If INITSWARM is true, initialize Docker swarm
+	init_swarm
+	STACKNAME="cloud-1"
+
+	# If INITSWARM is true, initialize Docker swarm
 	if [ "$1" = true ]; then
-    	init_swarm
 		monitor_nodes
 
-		STACKNAME="cloud-1"
-
 		num_nodes=$(docker node ls --format "{{.ID}}" | wc -l)
-		env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml $STACKNAME
-		docker service scale "$STACKNAME"_wordpress=$num_nodes
-		docker service scale "$STACKNAME"_mariadb=$num_nodes
+		print_action "env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml --with-registry-auth $STACKNAME" "Start services"
+		print_action "docker service scale '$STACKNAME'_wordpress=$num_nodes" "Scale wordpress"
+		print_action "docker service scale '$STACKNAME'_mariadb=$num_nodes" "Scale mariadb"
 	else
-		docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d
+		# print_action "env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml $STACKNAME" "Start services"
+		print_action "" "Start services"
+		env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml --with-registry-auth $STACKNAME
 	fi
-
-	echo "Containers are booting up..."
 }
 
 function	downcontainers {
-	docker compose -f ./docker-compose.yml --env-file $ENVFILE down
+	print_action "docker compose -f ./docker-compose.yml down" "Down all containers"
 }
 
 function	restartcontainer {
@@ -54,15 +54,22 @@ function	restartcontainer {
 }
 
 function	deletedatas {
-	rm -rf ./wordpress-data
-	rm -rf ./mariadb-data
+	print_action "rm -rf ./wordpress-data" "Remove wordpress-data folder"
+	print_action "rm -rf ./mariadb-data" "Remove mariadb-data folder"
 }
 
 function	cleancontainers {
-	#docker stop $(docker ps -a -q)
-	#docker rm $(docker ps -a -q)
-	docker system prune --all --force --volumes
-	sudo docker swarm leave --force
+	print_action "docker swarm leave --force" "Leave swarm"
+
+	if [[ $1 == true ]]
+	then
+
+		print_action "docker volume prune --force" "Remove volumes"
+		print_action "docker network prune --force" "Remove networks"
+	else
+		print_action "docker system prune --all --force --volumes" "Remove containers, volumes, networks and images"
+		print_action "docker builder prune --all --force" "Remove docker build cache"
+	fi
 }
 
 ##MAIN FUNCTIONS
@@ -74,24 +81,28 @@ function	genereconfigenv {
 	MYSQL_DATABASE="db-$RANDOM"
 	MYSQL_USER="user-$RANDOM"
 	MYSQL_PASSWORD="password-$RANDOM"
-	cat <<EOF > .env
-DOMAINNAME=$DOMAINNAME
-MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
-MYSQL_DATABASE=$MYSQL_DATABASE
-MYSQL_USER=$MYSQL_USER
-MYSQL_PASSWORD=$MYSQL_PASSWORD
-EOF
+
+	print_action "" "Generate .env"
+	echo "DOMAINNAME=$DOMAINNAME" > .env
+	echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
+	echo "MYSQL_DATABASE=$MYSQL_DATABASE" >> .env
+	echo "MYSQL_USER=$MYSQL_USER" >> .env
+	echo "MYSQL_PASSWORD=$MYSQL_PASSWORD" >> .env
 }
 
 function gethttps {
-	sleep 45
+	print_header "Generate HTTPS nginx configuration"
+	# sleep 45
 	DOMAINNAME=$1
 	INITSWARM=$2
 	if [[ $DOMAINNAME == '' ]]
 	then
 		DOMAINNAME="localhost"
+		print_info "No domain name provided, setting it to 'localhost'"
 	fi
-	mkdir -p nginx/conf/
+
+	print_action "mkdir -p nginx/conf/" "Create nginx directory"
+	print_action "" "Fill nginx configuration file"
 	cat <<EOF > nginx/conf/default.conf
 server {
 	listen	80;
@@ -114,7 +125,7 @@ server {
 	}
 	location / {
 			proxy_set_header X-Forwarded-Proto https;
-			proxy_pass http://phpmyadmin/;
+			proxy_pass http://pma.$1\$request_uri;
 	}
 }
 
@@ -167,14 +178,6 @@ server {
 	}
 }
 EOF
-	if [[ $INITSWARM == true ]]
-	then
-		docker exec $(docker ps -q -f name=nginx) nginx -s reload
-	else
-		docker exec nginx nginx -s reload
-	fi
-	echo "Phpmyadmin at https://pma.$DOMAINNAME"
-	echo "Wordpress at https://wp.$DOMAINNAME"
 }
 
 function genere_confnginx {
@@ -182,8 +185,11 @@ function genere_confnginx {
 	if [[ $DOMAINNAME == '' ]]
 	then
 		DOMAINNAME="localhost"
+		print_info "No domain name provided, setting it to 'localhost'"
 	fi
-	mkdir -p nginx/conf/
+
+	print_action "mkdir -p nginx/conf/" "Create nginx configuration folder"
+	print_action "echo 'no action'" "Create nginx configuration file"
 	cat <<EOF > nginx/conf/default.conf
 server {
 	listen	80;
@@ -204,24 +210,23 @@ EOF
 }
 
 function	fcleanservices {
+	print_header "Cleaning services"
 	downcontainers
 	deletedatas
-	cleancontainers
+	cleancontainers $1
 }
 
 function	deployservices {
+	print_header "Generating configuration files"
+
 	DOMAINNAME=$1
 	genereconfigenv $DOMAINNAME
 	genere_confnginx $DOMAINNAME
-
-	### creer la structure de document + bons droits
-	### mettre les sources
-	### ajouter les data wordpress + mariadb
-	echo "Et la on rajoute les data wordpress + mariadb maintenant qu'on a mis env et nginx"
 }
 
 function	runservices {
 	### attention prérequis de deployservices si appel a cette function
+	print_header "Launching services"
 	upcontainers $1
 }
 
@@ -231,67 +236,99 @@ function	cleanandrestartservices {
 	runservices
 }
 
+# List of dependencies
+dependencies=(
+ "apt-transport-https"
+ "wget"
+ "software-properties-common"
+ "make"
+ "python3"
+ "ca-certificates" 
+ "curl"
+ "gnupg"
+ "jq"
+ )
 
 
 ##function install instance :
 function	installDependencies {
-	apt-get update
-	apt-get install -y apt-transport-https wget software-properties-common make python3
-	# Docker dependencies
-	apt-get install -y ca-certificates curl gnupg
+	print_header "Installing dependencies"
+	print_action "apt-get update" "Update"
+
+	# Check and install dependencies
+	for dep in "${dependencies[@]}"; do
+		print_action "apt-get install -y $dep" "Install $dep"
+	done
 }
 
 function	installDocker {
-	# Uninstall old versions to avoid conflicts
-	#for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove $pkg; done
+	print_header "Installing docker"
+
 	# Add docker gpg key
 	if [[ ! -f /etc/apt/keyrings/docker.gpg  ]]
 	then
-		install -m 0755 -d /etc/apt/keyrings
+		print_action "install -m 0755 -d /etc/apt/keyrings" "Create folder for docker gpg key"
+		print_action "" "Download gpg key"
 		curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-		chmod a+r /etc/apt/keyrings/docker.gpg
+		print_action "chmod a+r /etc/apt/keyrings/docker.gpg" "Set key permissions"
 	fi
 	# Add docker repository
 	if [[ ! -f /etc/apt/sources.list.d/docker.list  ]]
 	then
+		print_action '' "Add docker repository"
 		echo \
   			"deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   			"$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
   		sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 	fi
+
 	# Install docker
-	apt-get update
-	echo "avant install"
-	apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+	print_action "apt-get update" "Update"
+	print_action "apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin" "Install docker"
+
 	# Enable docker + make it start on boot
-#	systemctl start docker
 	STATUSDOCKER=`systemctl is-active docker`
 	if [[ $STATUSDOCKER == "active" ]]
 	then
-		echo "docker deja active"
-		systemctl enable docker
+		print_action "systemctl enable docker" "Restart docker"
 	else
-		echo "docker not active"
-		systemctl enable docker --now
+		print_action "systemctl enable docker --now" "Enable docker"
 	fi
 }
 
 function	purgeDocker {
+	print_header "Remove docker"
+
 	# Remove packages
-	systemctl disable docker --now
-	systemctl disable docker.socket --now
-	apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-	apt-get autoremove -y --purge
+	print_action "systemctl disable docker --now" "Disable docker"
+	print_action "systemctl disable docker.socket --now" "Disable docker socket"
+	print_action "apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin" "Remove all docker binaries"
+	print_action "apt-get autoremove -y --purge" "Remove dependencies"
 	# Remove key for docker
-	rm -r /etc/apt/keyrings/docker.gpg
+	print_action "rm -r /etc/apt/keyrings/docker.gpg" "Remove docker key"
 	# Delete all images, containers and volumes
-	rm -r /etc/apt/sources.list.d/docker.list
-	rm -rf /var/lib/docker
-	rm -rf /var/lib/containerd
-	rm -rf /var/lib/docker /etc/docker
+	print_action "rm -r /etc/apt/sources.list.d/docker.list" "Remove content of /etc/apt/sources.list.d/docker.list"
+	print_action "rm -rf /var/lib/docker" "Remove content of /var/lib/docker"
+	print_action "rm -rf /var/lib/containerd" "Remove content of /var/lib/containerd"
+	print_action "rm -rf /var/lib/docker" "Remove content of /var/lib/docker"
+	print_action "rm -rf /etc/docker" "Remove content of /etc/docker"
 	#rm /etc/apparmor.d/docker
-	groupdel docker
-	rm -rf /var/run/docker.sock
+	print_action "groupdel docker" "Remove docker group"
+	print_action "rm -rf /var/run/docker.sock" "remove docker daemon"
+}
+
+getRateLimit() {
+	IMAGE="ratelimitpreview/test"
+	TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$IMAGE:pull" | jq -r .token)
+	http_response=$(curl -s --head -H "Authorization: Bearer $TOKEN" https://registry-1.docker.io/v2/$IMAGE/manifests/latest)
+	ratelimit_remaining=$(echo "$http_response" | grep -i 'ratelimit-remaining:' | awk -F '[:;]' '{print $2}' | tr -d ' ')
+	print_info "Remainig docker pulls: $ratelimit_remaining"
+
+	if [[ $ratelimit_remaining == "0" ]]
+	then
+		print_info "/!\\ No more pull allowed. Impossible to start services. Try later, or upgrade pull rate limit."
+		exit 1
+	fi
 }
 
 #deletedatas restartcontainer downcontainers upcontainers

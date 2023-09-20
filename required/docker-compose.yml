@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-
   wordpress:
     image: wordpress:latest
     restart: always
@@ -12,45 +11,15 @@ services:
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
     ports:
       - "8084"
-    volumes:
-      - wordpress-data:/var/www/html:rw
-    networks:
-      - mynetwork
     depends_on:
       - mariadb
-    deploy:
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 3
-        window: 120s
-
-  nginx:
-    image: nginx:latest
-    restart: always
-    ports:
-      - 80:80
-      - 443:443
     volumes:
-      - ./nginx/conf:/etc/nginx/conf.d:rw
       - wordpress-data:/var/www/html:rw
-      - certbot-conf:/etc/letsencrypt:rw
-      - certbot-data:/var/www/certbot:rw
-    networks:
-      - mynetwork
-    depends_on:
-      - phpmyadmin
-      - wordpress
     deploy:
       restart_policy:
         condition: any
         delay: 5s
-        max_attempts: 3
         window: 120s
-      mode: global
-      placement:
-        constraints:
-          - node.role == manager
 
   mariadb:
     image: mariadb:latest
@@ -62,13 +31,12 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - mariadb-data:/var/lib/mysql:rw
-    networks:
-      - mynetwork
+    ports:
+      - 3006
     deploy:
       restart_policy:
         condition: any
         delay: 5s
-        max_attempts: 3
         window: 120s
 
   phpmyadmin:
@@ -76,8 +44,6 @@ services:
     restart: always
     ports:
       - 8083:80
-    networks:
-      - mynetwork
     environment:
       PMA_HOST: mariadb
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -90,8 +56,33 @@ services:
       restart_policy:
         condition: any
         delay: 5s
-        max_attempts: 3
         window: 120s
+
+  nginx:
+    image: nginx:latest
+    command: nginx -s reload
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d:rw
+      - wordpress-data:/var/www/html:rw
+      - certbot-conf:/etc/letsencrypt:rw
+      - certbot-data:/var/www/certbot:rw
+    depends_on:
+      - wordpress
+      - mariadb
+      - phpmyadmin
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+        window: 120s
+      mode: global
+      placement:
+        constraints:
+          - node.role == manager
 
   certbot:
     image: certbot/certbot:latest
@@ -100,16 +91,17 @@ services:
       - certbot-conf:/etc/letsencrypt:rw
       - certbot-logs:/var/log/letsencrypt:rw
       - certbot-data:/var/www/certbot:rw
-    networks:
-      - mynetwork
     depends_on:
       - nginx
     deploy:
       restart_policy:
         condition: any
         delay: 5s
-        max_attempts: 3
         window: 120s
+      mode: global
+      placement:
+        constraints:
+          - node.role == manager
 
 volumes:
   wordpress-data:
@@ -117,8 +109,3 @@ volumes:
   certbot-conf:
   certbot-logs:
   certbot-data:
-
-
-networks:
-  mynetwork:
-    driver: overlay

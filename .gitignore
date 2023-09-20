@@ -4,6 +4,7 @@
 # Misc
 mariadb-data/
 wordpress-data/
+log.txt
 
 # Generated folders
 cloud1-*/
