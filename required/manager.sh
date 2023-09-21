@@ -8,6 +8,9 @@ init_swarm() {
 
 # Function to monitor for new nodes
 monitor_nodes() {
+	command=$(docker swarm join-token worker)
+
+	print_info "$command"
     while true; do
         # Check for new nodes
         new_nodes=$(docker node ls --format "{{.Hostname}}")
@@ -54,8 +57,8 @@ function	upcontainers {
 
 		num_nodes=$(docker node ls --format "{{.ID}}" | wc -l)
 		print_action "env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml --with-registry-auth $STACKNAME" "Start services"
-		print_action "docker service scale '$STACKNAME'_wordpress=$num_nodes" "Scale wordpress"
-		print_action "docker service scale '$STACKNAME'_mariadb=$num_nodes" "Scale mariadb"
+		print_action "docker service scale ${STACKNAME}_mariadb=$num_nodes" "Scale mariadb"
+		print_action "docker service scale ${STACKNAME}_wordpress=$num_nodes" "Scale wordpress"
 	else
 		# print_action "env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml $STACKNAME" "Start services"
 		print_action "" "Start services"
