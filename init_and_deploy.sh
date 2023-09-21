@@ -55,8 +55,9 @@ installDependencies
 installDocker
 getRateLimit
 deployservices $DOMAINNAME
-gethttps $DOMAINNAME $INITSWARM
+gethttp $DOMAINNAME $INITSWARM
 runservices $INITSWARM
-echo ""
+gethttps $DOMAINNAME $INITSWARM
+print_info "Deployment done."
 print_info "Phpmyadmin at https://pma.$DOMAINNAME"
 print_info "Wordpress at https://wp.$DOMAINNAME"

@@ -63,15 +63,15 @@ services:
 
   nginx:
     image: nginx:latest
-    # command: nginx -s reload
     restart: always
     ports:
       - 80:80
+      - 443:443
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:rw
       - wordpress-data:/var/www/html:rw
-      - certbot-conf:/etc/letsencrypt:rw
-      - certbot-data:/var/www/certbot:rw
+      - ./letsencrypt:/etc/letsencrypt:rw
+      - ./certbot-data:/var/www/certbot:rw
     depends_on:
       - wordpress
       - mariadb
@@ -87,54 +87,6 @@ services:
         constraints:
           - node.role == manager
 
-  ## One nginx to get certbot certificates using only 80 port, and one up when certificates are presents with only port 443
-  nginx-ssl:
-    image: nginx:latest
-    # command: nginx -s reload
-    restart: always
-    ports:
-      - 443:443
-    volumes:
-      - ./nginx-ssl/conf:/etc/nginx/conf.d:rw
-      - wordpress-data:/var/www/html:rw
-      - certbot-conf:/etc/letsencrypt:rw
-      - certbot-data:/var/www/certbot:rw
-    depends_on:
-      - certbot
-    deploy:
-      restart_policy:
-        condition: any
-        delay: 30s
-        max_attempts: 3
-        window: 120s
-      mode: global
-      placement:
-        constraints:
-          - node.role == manager
-
-  certbot:
-    image: certbot/certbot:latest
-    command: certonly --cert-name ${DOMAINNAME} --webroot --webroot-path /var/www/certbot --email maiiwen@42l.fr --agree-tos --no-eff-email -d wp.${DOMAINNAME} -d pma.${DOMAINNAME} --test-cert --force-renewal
-    volumes:
-      - certbot-conf:/etc/letsencrypt:rw
-      - certbot-logs:/var/log/letsencrypt:rw
-      - certbot-data:/var/www/certbot:rw
-    depends_on:
-      - nginx
-    deploy:
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 3
-        window: 120s
-      mode: global
-      placement:
-        constraints:
-          - node.role == manager
-
 volumes:
   wordpress-data:
   mariadb-data:
-  certbot-conf:
-  certbot-logs:
-  certbot-data:

@@ -24,6 +24,25 @@ monitor_nodes() {
     done
 }
 
+wait_for_container() {
+	max_retries=10
+	retry_count=0
+
+	name=$1
+
+	while [ -z "$(sudo docker ps --filter name=$name --filter status=running | grep 'Up')" ]; do
+    	if [ $retry_count -ge $max_retries ]; then
+        	echo "Maximum retries reached. Exiting."
+        	exit 1
+    	fi
+
+		print_info "Waiting for $name container to start... Retry $retry_count/$max_retries"
+
+    	retry_count=$((retry_count + 1))
+    	sleep 10
+	done
+}
+
 ##LITTLE FUNCTIONS
 function	upcontainers {
 	init_swarm
@@ -42,6 +61,11 @@ function	upcontainers {
 		print_action "" "Start services"
 		env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml --with-registry-auth $STACKNAME
 	fi
+
+	print_action "wait_for_container nginx" "Wait for nginx to boot"
+	print_action "wait_for_container wordpress" "Wait for wordpress to boot"
+	print_action "wait_for_container phpmyadmin" "Wait for phpmyadmin to boot"
+	print_action "wait_for_container mariadb" "Wait for mariadb to boot"
 }
 
 function	downcontainers {
@@ -91,19 +115,21 @@ function	genereconfigenv {
 }
 
 function gethttps {
-	print_header "Generate HTTPS nginx configuration"
-	# sleep 45
 	DOMAINNAME=$1
 	INITSWARM=$2
+
 	if [[ $DOMAINNAME == '' ]]
 	then
 		DOMAINNAME="localhost"
 		print_info "No domain name provided, setting it to 'localhost'"
 	fi
 
-	print_action "mkdir -p nginx-ssl/conf/" "Create nginx directory"
+	print_header "Get letsencrypt certificates"
+	print_action "certbot certonly --cert-name ${DOMAINNAME} --webroot --webroot-path ./certbot-data --config-dir ./letsencrypt --email maiiwen@42l.fr --agree-tos --no-eff-email -d wp.${DOMAINNAME} -d pma.${DOMAINNAME} --test-cert --break-my-certs --force-renewal" "Asking for new certificate"
+
+	print_header "Generate HTTPS nginx configuration"
 	print_action "" "Fill nginx configuration file"
-	cat <<EOF > nginx-ssl/conf/default.conf
+	cat <<EOF > nginx/conf/default.conf
 
 server {
 	listen	80;
@@ -126,7 +152,7 @@ server {
 	}
 	location / {
 			proxy_set_header X-Forwarded-Proto https;
-			proxy_pass http://pma.$1\$request_uri;
+			proxy_pass http://phpmyadmin/;
 	}
 }
 
@@ -179,6 +205,10 @@ server {
 	}
 }
 EOF
+
+	print_action "docker exec $(docker ps -q -f name=nginx) nginx -s reload" "Update nginx configuration"
+	print_action "wait_for_container nginx" "Wait for nginx to reload"
+	
 }
 
 function gethttp {
@@ -288,6 +318,7 @@ dependencies=(
  "curl"
  "gnupg"
  "jq"
+ "certbot"
  )
 
 
