@@ -1,10 +1,8 @@
-version: '3.9'
+version: '3.8'
 
 services:
   wordpress:
-    build:
-        context: .
-        dockerfile: ./wordpress/Dockerfile
+    image: wordpress:latest
     restart: always
     environment:
       WORDPRESS_DB_HOST: mariadb
@@ -12,17 +10,18 @@ services:
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
     ports:
-      - 8084:80
-    volumes:
-      - ./wordpress-data:/var/www/html:rw
+      - "8084"
     depends_on:
       - mariadb
+    volumes:
+      - wordpress-data:/var/www/html:rw
     deploy:
       restart_policy:
         condition: any
         delay: 5s
         max_attempts: 3
         window: 120s
+
   mariadb:
     image: mariadb:latest
     restart: always
@@ -32,7 +31,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      - ./mariadb-data:/var/lib/mysql:rw
+      - mariadb-data:/var/lib/mysql:rw
     ports:
       - 3006
     deploy:
@@ -41,6 +40,7 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     restart: always
@@ -63,8 +63,8 @@ services:
       placement:
         constraints:
           - node.role == manager
+
   nginx:
-    container_name: nginx  
     image: nginx:latest
     restart: always
     ports:
@@ -72,11 +72,12 @@ services:
       - 443:443
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:rw
-      - ./wordpress-data:/var/www/html:rw
+      - wordpress-data:/var/www/html:rw
       - ./letsencrypt:/etc/letsencrypt:rw
       - ./certbot-data:/var/www/certbot:rw
     depends_on:
       - wordpress
+      - mariadb
       - phpmyadmin
     deploy:
       restart_policy:
@@ -88,6 +89,7 @@ services:
       placement:
         constraints:
           - node.role == manager
+
 volumes:
   wordpress-data:
   mariadb-data:
