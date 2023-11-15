@@ -281,6 +281,8 @@ server {
 	}
 }
 EOF
+    mkdir -p certbot-data
+    mkdir -p letsencrypt
 }
 
 function	fcleanservices {
