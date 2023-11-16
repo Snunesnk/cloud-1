@@ -16,7 +16,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --init-swarm|-i)
             INITSWARM=true
-            shift 
+            shift
             ;;
         *)
             # Assume any other argument is the DOMAIN_NAME
@@ -60,5 +60,5 @@ runservices $INITSWARM
 gethttps $DOMAINNAME $INITSWARM
 print_info "Deployment done."
 print_info "Phpmyadmin at https://pma.$DOMAINNAME"
-print_info "Wordpress at https://wp.$DOMAINNAME"
-print_info "Database connexion infos in the .env file"
+print_info "Wordpress at https://wp.$DOMAINNAME - Hint : admin / Adminhijk67"
+print_info "Database connexion infos into .env file"

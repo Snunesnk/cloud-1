@@ -32,8 +32,8 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - ./mariadb-data:/var/lib/mysql:rw
-      - ./mariadb-data/wordpress.sql:/docker-entrypoint-initdb.d/database.sql
-ports:
+      - ./mariadb-entrypoint:/docker-entrypoint-initdb.d:rw
+    ports:
       - 3006
     deploy:
       restart_policy:

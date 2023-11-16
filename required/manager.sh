@@ -14,7 +14,7 @@ monitor_nodes() {
     while true; do
         # Check for new nodes
         new_nodes=$(docker node ls --format "{{.Hostname}}")
-        
+
         if [ -n "$new_nodes" ]; then
             print_info "Current nodes in the swarm:"
 			echo "$new_nodes"
@@ -195,11 +195,11 @@ server {
 	location ~ /\.ht {
 			deny all;
 	}
-	location = /favicon.ico { 
-			log_not_found off; access_log off; 
+	location = /favicon.ico {
+			log_not_found off; access_log off;
 	}
-	location = /robots.txt { 
-			log_not_found off; access_log off; allow all; 
+	location = /robots.txt {
+			log_not_found off; access_log off; allow all;
 	}
 	location ~* \.(css|gif|ico|jpeg|jpg|js|png)$ {
 			root /var/www/html;
@@ -211,7 +211,7 @@ EOF
 
 	print_action "docker exec $(docker ps -q -f name=nginx) nginx -s reload" "Update nginx configuration"
 	print_action "wait_for_container nginx" "Wait for nginx to reload"
-	
+
 }
 
 function gethttp {
@@ -283,6 +283,7 @@ server {
 EOF
     mkdir -p certbot-data
     mkdir -p letsencrypt
+    mkdir -p mariadb-data
 }
 
 function	fcleanservices {
@@ -319,7 +320,7 @@ dependencies=(
  "software-properties-common"
  "make"
  "python3"
- "ca-certificates" 
+ "ca-certificates"
  "curl"
  "gnupg"
  "jq"
