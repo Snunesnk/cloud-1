@@ -61,3 +61,4 @@ gethttps $DOMAINNAME $INITSWARM
 print_info "Deployment done."
 print_info "Phpmyadmin at https://pma.$DOMAINNAME"
 print_info "Wordpress at https://wp.$DOMAINNAME"
+print_info "Database connexion infos in the .env file"
