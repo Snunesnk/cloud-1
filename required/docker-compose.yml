@@ -14,7 +14,7 @@ services:
     depends_on:
       - mariadb
     volumes:
-      - wordpress-data:/var/www/html:rw
+      - ./wordpress-data:/var/www/html:rw
     deploy:
       restart_policy:
         condition: any
@@ -31,7 +31,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      - mariadb-data:/var/lib/mysql:rw
+      - ./mariadb-data:/var/lib/mysql:rw
     ports:
       - 3006
     deploy:
@@ -72,7 +72,7 @@ services:
       - 443:443
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:rw
-      - wordpress-data:/var/www/html:rw
+      - ./wordpress-data:/var/www/html:rw
       - ./letsencrypt:/etc/letsencrypt:rw
       - ./certbot-data:/var/www/certbot:rw
     depends_on:
