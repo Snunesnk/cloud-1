@@ -1,5 +1,9 @@
 #!/bin/bash
-
+# The script must be launched as root,
+if (( $EUID != 0 )); then
+    echo "Please run as root"
+    exit
+fi
 DOMAINNAME=""
 KEEPIMAGES=false
 if [[ $# < 1 || $# > 2  ]]; then
@@ -25,26 +29,19 @@ done
 
 if [ -z "$DOMAINNAME" ]; then
     echo "Error: DOMAIN_NAME is required."
-    echo "Usage : sudo $0 [--keep-images] DOMAIN_NAME"
+    echo "Usage : sudo bash $0 [--keep-images] DOMAIN_NAME"
     exit 1
 fi
 
 ENVFILE=".env"
 WORKINGDIRECTORY="cloud1-""$DOMAINNAME"
 
-# The script must be launched as root,
-# To install everything + start services
-if (( $EUID != 0 )); then
-    echo "Please run as root"
-    exit 1
-fi
-
-if [[ ! -d $WORKINGDIRECTORY  ]]
+if ! [[ -d $WORKINGDIRECTORY  ]]
 then
-	echo "No working directory for $DOMAINNAME"
-	exit 1
+	echo "You didn't already deploy  $DOMAINNAME"
+	echo "Please use the init script"
+	exit
 fi
-
 cd $WORKINGDIRECTORY
 
 # Get utils functions
@@ -52,7 +49,12 @@ source ./manager.sh
 source ./beautify.sh
 
 fcleanservices $KEEPIMAGES
-cd ..
-rm -rf $WORKINGDIRECTORY
-purgeDocker
-rm -f log.txt
+getRateLimit
+deployservices $DOMAINNAME
+gethttp $DOMAINNAME
+runservices
+gethttps $DOMAINNAME
+print_info "Deployment done."
+print_info "Phpmyadmin at https://pma.$DOMAINNAME"
+print_info "Wordpress at https://wp.$DOMAINNAME - Hint : admin / Adminhijk67"
+print_info "Database connexion infos into .env file"
