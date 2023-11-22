@@ -20,7 +20,7 @@ done
 
 if [ -z "$DOMAINNAME" ]; then
     echo "Error: DOMAIN_NAME is required."
-    echo "Usage : sudo $0 [--save-images] DOMAIN_NAME"
+    echo "Usage : sudo $0 [--keep-images] DOMAIN_NAME"
     exit 1
 fi
 

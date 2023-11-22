@@ -1,7 +1,8 @@
-version: '3.8'
+version: '4'
 
 services:
   wordpress:
+    container_name: ${RANDOMCONTAINER}-wordpress
     image: wordpress:latest
     restart: always
     environment:
@@ -15,14 +16,15 @@ services:
       - mariadb
     volumes:
       - ./wordpress-data:/var/www/html:rw
-    deploy:
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 3
-        window: 120s
+        #    deploy:
+        #      restart_policy:
+        #        condition: any
+        #        delay: 5s
+        #        max_attempts: 3
+        #        window: 120s
 
   mariadb:
+    container_name: ${RANDOMCONTAINER}-mariadb
     image: mariadb:latest
     restart: always
     environment:
@@ -35,14 +37,15 @@ services:
       - ./mariadb-entrypoint:/docker-entrypoint-initdb.d:rw
     ports:
       - 3006
-    deploy:
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 3
-        window: 120s
+#    deploy:
+#      restart_policy:
+#        condition: any
+#        delay: 5s
+#        max_attempts: 3
+#        window: 120s
 
   phpmyadmin:
+    container_name: ${RANDOMCONTAINER}-phpmyadmin
     image: phpmyadmin/phpmyadmin
     restart: always
     ports:
@@ -55,17 +58,18 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     depends_on:
       - mariadb
-    deploy:
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 3
-        window: 120s
-      placement:
-        constraints:
-          - node.role == manager
+        #    deploy:
+        #      restart_policy:
+        #        condition: any
+        #        delay: 5s
+        #        max_attempts: 3
+        #        window: 120s
+        #      placement:
+        #        constraints:
+        #          - node.role == manager
 
   nginx:
+    container_name: ${RANDOMCONTAINER}-nginx
     image: nginx:latest
     restart: always
     ports:
@@ -80,17 +84,20 @@ services:
       - wordpress
       - mariadb
       - phpmyadmin
-    deploy:
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 3
-        window: 120s
-      mode: global
-      placement:
-        constraints:
-          - node.role == manager
+        #    deploy:
+        #      restart_policy:
+        #        condition: any
+        #        delay: 5s
+        #        max_attempts: 3
+        #        window: 120s
+        #      mode: global
+        #      placement:
+        #        constraints:
+        #          - node.role == manager
 
 volumes:
   wordpress-data:
   mariadb-data:
+  mariadb-entrypoint:
+  letsencrypt:
+  certbot-data:

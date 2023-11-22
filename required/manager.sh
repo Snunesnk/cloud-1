@@ -1,32 +1,6 @@
 #!/bin/bash
 #ENVFILE="./.env"
 
-# Function to initialize Docker swarm
-init_swarm() {
-    print_action "docker swarm init --advertise-addr $(hostname -i)" "Start new swarm"
-}
-
-# Function to monitor for new nodes
-monitor_nodes() {
-	command=$(docker swarm join-token worker)
-
-	print_info "$command"
-    while true; do
-        # Check for new nodes
-        new_nodes=$(docker node ls --format "{{.Hostname}}")
-
-        if [ -n "$new_nodes" ]; then
-            print_info "Current nodes in the swarm:"
-			echo "$new_nodes"
-            read -p "Scan for new nodes? (y/n): " choice
-            if [ "$choice" = "n" ]; then
-                print_info "Proceeding with current nodes."
-                break
-            fi
-        fi
-    done
-}
-
 wait_for_container() {
 	max_retries=10
 	retry_count=0
@@ -48,23 +22,8 @@ wait_for_container() {
 
 ##LITTLE FUNCTIONS
 function	upcontainers {
-	init_swarm
-	STACKNAME="cloud-1"
-
-	# If INITSWARM is true, initialize Docker swarm
-	if [ "$1" = true ]; then
-		monitor_nodes
-
-		num_nodes=$(docker node ls --format "{{.ID}}" | wc -l)
-		print_action "env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml --with-registry-auth $STACKNAME" "Start services"
-		print_action "docker service scale ${STACKNAME}_mariadb=$num_nodes" "Scale mariadb"
-		print_action "docker service scale ${STACKNAME}_wordpress=$num_nodes" "Scale wordpress"
-	else
-		# print_action "env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml $STACKNAME" "Start services"
-		print_action "" "Start services"
-		env $(cat $ENVFILE | grep ^[A-Z] | xargs) docker stack deploy --compose-file docker-compose.yml --with-registry-auth $STACKNAME
-	fi
-
+	print_action "" "Start services"
+	docker compose -f ./docker-compose.yml --env-file $ENVFILE up -d
 	print_action "wait_for_container nginx" "Wait for nginx to boot"
 	print_action "wait_for_container wordpress" "Wait for wordpress to boot"
 	print_action "wait_for_container phpmyadmin" "Wait for phpmyadmin to boot"
@@ -86,8 +45,6 @@ function	deletedatas {
 }
 
 function	cleancontainers {
-	print_action "docker swarm leave --force" "Leave swarm"
-
 	if [[ $1 == true ]]
 	then
 
@@ -108,18 +65,19 @@ function	genereconfigenv {
 	MYSQL_DATABASE="db-$RANDOM"
 	MYSQL_USER="user-$RANDOM"
 	MYSQL_PASSWORD="password-$RANDOM"
-
+	RANDOM2=$(date +%s%N | cut -b10-19)
+	RANDOMCONTAINER="c1-$RANDOM2"
 	print_action "" "Generate .env"
 	echo "DOMAINNAME=$DOMAINNAME" > .env
 	echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
 	echo "MYSQL_DATABASE=$MYSQL_DATABASE" >> .env
 	echo "MYSQL_USER=$MYSQL_USER" >> .env
 	echo "MYSQL_PASSWORD=$MYSQL_PASSWORD" >> .env
+	echo "RANDOMCONTAINER=$RANDOMCONTAINER" >> .env
 }
 
 function gethttps {
 	DOMAINNAME=$1
-	INITSWARM=$2
 
 	if [[ $DOMAINNAME == '' ]]
 	then
@@ -218,7 +176,6 @@ function gethttp {
 	print_header "Generate HTTP nginx configuration"
 
 	DOMAINNAME=$1
-	INITSWARM=$2
 	if [[ $DOMAINNAME == '' ]]
 	then
 		DOMAINNAME="localhost"
@@ -408,7 +365,4 @@ getRateLimit() {
 		exit 1
 	fi
 }
-
-#deletedatas restartcontainer downcontainers upcontainers
-#cleancontainers genereconfigenv genere_confnginx fcleanservices deployservices runservices cleanandrestartservices installDependencies installDocker purgeDocker
 
